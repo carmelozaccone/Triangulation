@@ -1,0 +1,434 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+#include <iostream>
+#include <sstream>
+#include <vector>
+#include <string>
+#include <cstring>
+#include "reader_writer.h"
+#include "robustPredicates.h"
+#include <math.h>
+#include <map>
+
+struct Vertex {
+    double x , y;
+    double val;
+    int num;
+    Vertex (double X, double Y) :
+    x (X) , y(Y) { }
+
+    std::string print () {
+ 		std::stringstream sx,sy,sval,snum;
+ 		std::string xstr, ystr,valstr,numstr;
+ 		sx << x;
+ 		xstr = sx.str();
+ 		sy << y;
+ 		ystr = sy.str();
+ 		sval << val;
+ 		valstr = sval.str();
+ 		snum << num;
+ 		numstr = snum.str();
+
+ 		return "Vertex:  #" + numstr + "(" + xstr + "," + ystr + ";" + valstr + ")";
+
+     }
+} ;
+
+
+struct Edge {
+    Vertex *vmin, *vmax;
+    Edge( Vertex *v1 , Vertex *v2 ){
+        vmin = std::min ( v1 , v2 ) ;
+        vmax = std::max ( v1 , v2 ) ;
+    }
+    bool operator < (const Edge &other ) const {
+        if (vmin < other .vmin) return true ;
+        if (vmin > other .vmin) return false ;
+        if (vmax < other .vmax) return true ;
+        return false ;
+    }
+
+} ;
+
+struct Face {
+Face *F[3] ;
+Vertex *V[3] ;
+bool deleted ;
+Face ( Vertex *v0 , Vertex *v1 , Vertex *v2 ) {
+	V[0] = v0 ; V[1] = v1 ; V[2] = v2 ;
+	F[0] = F[1] = F[2] = NULL;
+	deleted = false ;
+	}
+	Edge getEdge (int k) {
+	return Edge (V[k] ,V[(k+1)%3]) ;
+	}
+	bool inCircle ( Vertex *c ){
+		double test = robustPredicates::incircle ((double*) V[0], (double*) V[1], (double*) V[2], (double*) c)
+		* robustPredicates::orient2d ((double*) V[0], (double*) V[1], (double*) V[2]);
+		return test>0;
+	}
+	Vertex centroid(){
+	  double x=V[0]->x+V[1]->x+V[2]->x;
+	  double y=V[0]->y+V[1]->y+V[2]->y;
+	  return Vertex(x/3, y/3);
+
+	}
+
+	std::string print() {
+		return "Face: V0:" + (V[0]->print()) + "; V1: " + (V[1]->print()) +";  V2:" + (V[2]->print());
+	}
+
+} ;
+
+void bigSquare(std::vector<Vertex*> &vertex, std::vector<Face*> &face);
+//double centroid(Face tri);
+void computeAdjacencies ( std :: vector <Face*> &cavity) ;
+void delaunayCavity (Face * f , Vertex *v , std :: vector<Face*> &cavity ,
+std :: vector<Edge> &bnd, std :: vector<Face*> &otherSide ) ;
+Face* lineSearch (Face * f , Vertex *v ) ;
+void delaunayTrgl ( std :: vector<Vertex*> &S, std :: vector<Face*> &T) ;
+void swap(double x1, double x2);
+void HilbertCoord ( double x , double y , double x0 , double y0 ,
+double xRed , double yRed , double xBlue , double yBlue ,
+int d, int bits [ ] );
+//double centroid(Face tri);
+void computeAdjacencies ( std :: vector <Face*> &cavity) ;
+void delaunayCavity (Face * f , Vertex *v , std :: vector<Face*> &cavity ,
+std :: vector<Edge> &bnd, std :: vector<Face*> &otherSide ) ;
+Face* lineSearch (Face * f , Vertex *v ) ;
+void delaunayTrgl ( std :: vector<Vertex*> &S, std :: vector<Face*> &T) ;
+void swap(double x1, double x2);
+void HilbertCoord ( double x , double y , double x0 , double y0 ,
+double xRed , double yRed , double xBlue , double yBlue ,
+int d, int bits [ ] );
+void newPoint (Vertex* S, std :: vector<Face*> &T);
+
+
+
+
+int main( int argc, char const *argv[]){
+    	// Data[3*i],Data[3*i+1] will contain ith node (for all i such that 0<=i<n)
+	double *Data;
+	unsigned n = read_nodes_txt("In/Exemple1.in", &Data);
+        
+    robustPredicates::exactinit();
+    std::vector <Vertex*> listeV;
+   
+    for ( int i =0; i<n ; i ++) {
+        Vertex *nVert = new Vertex (Data[3*i],Data[3*i+1]);
+        nVert->val = Data[3*i+2];
+        nVert->num = i;
+        listeV.push_back (nVert);
+    }
+
+    std::vector<Face*> face;
+    
+    //std::vector <Vertex*> listeVnew;
+    bigSquare(listeV, face);
+    //std::cout << "0. size: " << listeV.size() << '\n';//AAAAAAAAAAA
+
+	std::cout << "Printing Faces seed (BigSquare)" << std::endl;
+    for (int i=0; i<face.size();i++) {
+    	std::cout << "#" << i << face[i]->print() << std::endl;
+    }
+
+    delaunayTrgl(listeV, face);
+    //std::cout << "0. size: " << listeV.size() << '\n';//AAAAAAAAAAA
+
+
+	std::cout << "Printing Faces Delaunay" << std::endl;
+	for (int i=0; i<face.size();i++) {
+		std::cout << "#" << i << face[i]->print() << std::endl;
+	}
+
+    int np=0;
+    while (np<1){
+      double xn;
+      double yn;
+      double valn;
+      std::cout <<"CoordonnÃ©e x:";
+      std::cin >> xn;
+      std::cout <<"CoordonnÃ©e y:";
+      std::cin >> yn;
+      std::cout <<"Valeur:";
+      std::cin >> valn; // mettre -1 pour ne plus rajouter de noeuds
+      if (valn!=-1){
+	Vertex *nv = new Vertex(xn,yn);
+	nv->val=valn;
+	nv->num=listeV.size();
+	newPoint (nv,face);
+	listeV.push_back(nv);
+      }
+      else{
+	np++;
+      }
+    }
+
+    
+    
+        //unsigned* Triangles = malloc(6*n*sizeof(unsigned));
+        //std::vector<unsigned*>Triangles;
+    unsigned Triangles[3*face.size()];
+    for (int i=0; i<face.size(); i++){
+      Triangles[3*i] = face[i]->V[0]->num;
+      Triangles[3*i+1]= face[i]->V[1]->num;
+      Triangles[3*i+2]=  face[i]->V[2]->num;
+    }	
+
+    double node[3*listeV.size()];
+    for (int i=0; i<listeV.size(); i++){
+      node[3*i] = listeV[i]->x;
+      node[3*i+1]= listeV[i]->y;
+      node[3*i+2]=  listeV[i]->val;
+      //std::cout << "0. size: " << listeV[i]->val << '\n';//AAAAAAAAAAA
+    }
+
+    //std::cout << "0. size: " << listeV.size() << '\n';//AAAAAAAAAAA
+    
+    write_gmsh_txt("Out/triangle5.out", node, listeV.size(), Triangles,face.size());
+    //free(Triangles);
+    //free(Data);
+        
+    return 0;
+}
+
+    void bigSquare( std::vector<Vertex*> &vertex, std::vector<Face*> &face) {
+        int nPoints = vertex.size();
+        double maxX=vertex[0]->x;
+        double minX=vertex[0]->x;
+        double maxY=vertex[0]->y;
+        double minY=vertex[0]->y;
+        for (int i=0; i<nPoints; i++) {
+            if (maxX<=vertex[i]->x) {               
+                maxX=vertex[i]->x;
+            }
+            if (minX>=vertex[i]->x) {
+                minX=vertex[i]->x;
+            }
+            if (maxY<=vertex[i]->y) {
+                maxY=vertex[i]->y;
+            }
+            if (minY>=vertex[i]->y) {
+                minY=vertex[i]->y;
+            }                     
+        }
+        Vertex *nVert1 = new Vertex (minX-0.1,minY-0.1);
+        Vertex *nVert2 = new Vertex (minX-0.1,maxY+0.1);
+        Vertex *nVert3 = new Vertex (maxX+0.1,maxY+0.1);
+        Vertex *nVert4 = new Vertex (maxX+0.1,minY-0.1);
+        nVert1->num = nPoints; 
+        nVert2->num = nPoints+1;
+        nVert3->num = nPoints+2;
+        nVert4->num = nPoints+3;
+
+	//printf("%3.2d\t%3.2d\t%3.2d\t%3.2d\n", nVert1->num , nVert2->num , nVert3->num,  nVert4->num);
+        
+        vertex.push_back(nVert1);
+        vertex.push_back(nVert2);
+        vertex.push_back(nVert3);
+        vertex.push_back(nVert4);
+        
+		std::cout <<"d:BigSquare à définit:" << std::endl;
+		std::cout << "d:  (minX: "<< minX-0.1 << ", " << "minY: " << minY-0.1 <<")" << std::endl;
+		std::cout << "d:  (maxX: "<< maxX+0.1 << ", " << "maxY: " << maxY+0.1 <<")" << std::endl;
+	
+		
+        Face *nFace1 = new Face (vertex[nPoints  ],
+                                 vertex[nPoints+2],
+                                 vertex[nPoints+1]);
+        Face *nFace2 = new Face (vertex[nPoints  ],
+                                 vertex[nPoints+3],
+                                 vertex[nPoints+2]);
+        face.push_back(nFace1);
+        face.push_back(nFace2);
+        computeAdjacencies(face);
+    }
+
+
+
+void computeAdjacencies ( std :: vector <Face*> &cavity) {
+    std::map < Edge , std:: pair < int, Face* > >edgeToFace;
+    for ( int iFace=0 ; iFace < cavity.size ( ) ; iFace++ ) {
+        for ( int iEdge=0 ; iEdge < 3 ; iEdge++) {
+            Edge edge = cavity [ iFace]->getEdge ( iEdge ) ;
+            std::map < Edge , std :: pair < int , Face* > >::iterator it = edgeToFace.find(edge) ;
+            if ( it == edgeToFace.end() ) {
+                //edge has not yet been touched , so create an entry
+                edgeToFace.insert ( std :: make_pair ( edge , std ::make_pair ( iEdge , cavity [ iFace ] ) ) ) ;
+            }
+            else {
+                //Connect the two neighboring triangles
+                cavity [ iFace]->F[ iEdge ] = it ->second.second ;
+                it ->second.second->F[ it ->second.first ] = cavity [ iFace ] ;
+                //Erase edge from the map
+                edgeToFace.erase ( it ) ;
+            }
+        }
+    }
+}
+
+void delaunayCavity (Face * f , Vertex *v , std :: vector<Face*> &cavity ,
+std :: vector<Edge> &bnd, std :: vector<Face*> &otherSide ) {
+  //std::cout << "3. size: " << 1 << '\n';//AAAAAAAAAAA
+    if ( f->deleted ) return ;
+    //std::cout << "3. size: " << 1 << '\n';//AAAAAAAAAAA
+    f->deleted = true ; // Mark the triangle
+    cavity.push_back( f ) ;
+    for ( int iNeigh=0; iNeigh<3 ; iNeigh++) {
+        if ( f->F[ iNeigh ] == NULL) {
+            bnd.push_back ( f->getEdge ( iNeigh ) ) ;
+        }
+        else if ( !f->F[ iNeigh]-> inCircle (v) ) {
+            bnd.push_back ( f->getEdge ( iNeigh ) ) ;
+            if ( !f->F[ iNeigh]->deleted ) {
+                otherSide.push_back( f->F[ iNeigh ] ) ;
+                f->F[ iNeigh]->deleted = true ;
+            }
+        }
+        else delaunayCavity ( f->F[ iNeigh ] , v , cavity ,bnd, otherSide ) ;
+    }
+}
+
+
+Face* lineSearch (Face *f , Vertex *v ) {
+    while (1) {
+        if ( f == NULL) return NULL; // we should NEVER return here
+	//std::cout << "2. size: " << 1 << '\n';//AAAAAAAAAAA
+        if ( f->inCircle(v)) return f; // il faudrait 4 pts
+	//std::cout << "2. size: " << 1 << '\n';//AAAAAAAAAAA
+        Vertex c = f->centroid() ;
+	//std::cout << "2. size: " << 1 << '\n';//AAAAAAAAAAA
+        for ( int iNeigh=0; iNeigh<3 ; iNeigh++) {
+            Edge e = f->getEdge ( iNeigh ) ;
+            //  std::cout << "2. size: " << iNeigh << '\n';//AAAAAAAAAAA
+            // (double*) pour forcer conversion type de Vertex a double
+            if ( robustPredicates::orient2d ((double*) &c ,(double*)v ,(double*) e .vmin) *
+                robustPredicates::orient2d ((double*) &c ,(double*) v ,(double*) e.vmax) < 0 &&
+                robustPredicates::orient2d ((double*) e.vmin,(double*) e.vmax,(double*) &c ) *
+                robustPredicates::orient2d ((double*)e.vmin,(double*) e.vmax,(double*) v) < 0) {
+                f = f->F[ iNeigh ] ;
+                break ;
+            }
+        }
+    }
+}
+
+
+
+void delaunayTrgl ( std :: vector<Vertex*> &S, std :: vector<Face*> &T) {
+    for ( int iP=0 ; iP < S.size( )-4 ; iP++ ) {
+      //std::cout << "1. size: " << T.size() << '\n';//AAAAAAAA
+	Face *f = lineSearch ( T[0] , S[iP]) ;
+        //Face *f = lineSearch ( T.back() , S[iP]) ;
+	//std::cout << "1. size: " << T.size() << '\n';//AAAAAAAA
+        std :: vector<Face*> cavity;
+        std :: vector<Edge> bnd;
+        std :: vector<Face*> otherSide;
+        delaunayCavity ( f , S[ iP ] , cavity , bnd, otherSide ) ;
+        if (bnd. size ( ) != cavity.size ( ) + 2) throw;
+        for ( int i =0; i<cavity.size ( ) ; i++) {
+            // reuse memory s lot s of invalid elements
+            cavity [ i ]->deleted = false ;
+            cavity [ i ]->F[0] = cavity[ i ]->F[1] = cavity[ i ]->F[2] = NULL;
+            cavity [ i ]->V[0] = bnd[ i ].vmin ;
+            cavity [ i ]->V[1] = bnd[ i ].vmax ;
+            cavity [ i ]->V[2] = S [iP] ;
+        }
+
+	// ATTENTION : Important
+	for (int i=0; i<otherSide.size(); i++){
+		otherSide[i]->deleted = false;
+	      }
+	
+        unsigned int cSize = cavity . size ( ) ;
+        for ( int i =cSize ; i <cSize +2; i ++) {
+            Face *newf = new Face (bnd[ i ].vmin ,bnd[ i ].vmax , S[ iP ] ) ;
+            T.push_back(newf) ;
+            cavity.push_back(newf ) ;
+        }
+        for ( int i =0; i<otherSide.size ( ) ; i++)
+            if ( otherSide [ i ] ) cavity.push_back( otherSide [ i ] ) ;
+        computeAdjacencies( cavity ) ;
+    }
+}
+
+void newPoint (Vertex* S, std :: vector<Face*> &T) {
+	Face *f = lineSearch ( T[0] , S) ;
+        //Face *f = lineSearch ( T.back() , S) ;
+        std :: vector<Face*> cavity;
+        std :: vector<Edge> bnd;
+        std :: vector<Face*> otherSide;
+        delaunayCavity ( f , S , cavity , bnd, otherSide ) ;
+        if (bnd.size( ) != cavity.size( ) + 2) throw;
+        for ( int i =0; i<cavity.size ( ) ; i++) {
+            // reuse memory s lot s of invalid elements
+            cavity [ i ]->deleted = false ;
+            cavity [ i ]->F[0] = cavity[ i ]->F[1] = cavity[ i ]->F[2] = NULL;
+            cavity [ i ]->V[0] = bnd[ i ].vmin ;
+            cavity [ i ]->V[1] = bnd[ i ].vmax ;
+            cavity [ i ]->V[2] = S ;
+        }
+
+	// ATTENTION : Important
+	for (int i=0; i<otherSide.size(); i++){
+		otherSide[i]->deleted = false;
+	      }
+	
+        unsigned int cSize = cavity . size ( ) ;
+        for ( int i =cSize ; i <cSize +2; i ++) {
+            Face *newf = new Face (bnd[ i ].vmin ,bnd[ i ].vmax , S ) ;
+            T.push_back(newf) ;
+            cavity.push_back(newf ) ;
+        }
+        for ( int i =0; i<otherSide.size ( ) ; i++)
+            if ( otherSide [ i ] ) cavity.push_back( otherSide [ i ] ) ;
+        computeAdjacencies( cavity ) ;
+    
+    
+}
+
+
+void swap(double x1, double x2){
+    x1 = -x1;
+    x2 = -x2;
+}
+
+void HilbertCoord ( double x , double y , double x0 , double y0 , double xRed , double yRed , double xBlue , double yBlue , int d, int bits [ ] ) {
+    for ( int i = 0; i <d; i++) {
+        double coordRed = ( x-x0 ) * xRed + ( y-y0 ) * yRed ;
+        double coordBlue = ( x-x0 ) * xBlue + (y-y0 ) * yBlue ;
+        xRed/=2; yRed/=2; xBlue /=2; yBlue /=2;
+        if (coordRed <= 0 && coordBlue <= 0) { // quadrant 0
+            x0 -= (xBlue+xRed) ; y0 -= (yBlue+yRed) ;
+            swap( xRed , xBlue ); swap(yRed , yBlue );
+            bits [ i ] = 0;
+        }
+        else if (coordRed <= 0 && coordBlue >= 0) { // quadrant 1
+            x0 += ( xBlue-xRed) ; y0 += ( yBlue-yRed) ;
+            bits [ i ] = 1;
+        }
+        else if (coordRed >= 0 && coordBlue >= 0) { // quadrant 2
+            x0 += ( xBlue+xRed) ; y0 += ( yBlue+yRed) ;
+            bits [ i ] = 2;
+        }
+        else if (coordRed >= 0 && coordBlue <= 0) { // quadrant 3
+            x0 += (-xBlue+xRed) ; y0 += (-yBlue+yRed) ;
+            swap( xRed , xBlue ); swap(yRed , yBlue ) ;
+            xBlue = -xBlue ; yBlue = -yBlue ;
+            xRed = -xRed ; yRed = -yRed ;
+            bits [ i ] = 3;
+        }
+
+    }
+}
+
+    
+
+
+    
+
+
+    

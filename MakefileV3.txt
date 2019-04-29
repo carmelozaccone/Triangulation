@@ -1,0 +1,101 @@
+## -*- Makefile -*-
+##
+## User: 
+## Time
+## Makefile created by .
+##
+## This file is generated manualy.
+##
+
+
+#### Compiler and tool definitions shared by all build targets #####
+CC = gcc
+CCC = g++
+CXX = g++
+BASICOPTS = -g3 -O0 -Wall 
+CFLAGS = $(BASICOPTS) -std=c++0x
+CCFLAGS = $(BASICOPTS)-c -fmessage-length=0 -Wno-sign-compare -Wno-write-strings
+CXXFLAGS = $(BASICOPTS)
+CCADMIN = 
+
+
+# Define the target directories.
+TARGETDIR_Triangulation.cpp=GNU-amd64-Windows
+
+
+all: $(TARGETDIR_Triangulation)/Triangulation.cpp
+
+## Target: Triangulation.cpp
+CPPFLAGS_Triangulation.cpp = \
+	-Imain_V3.cpp \
+	-Ireader_writer.cpp \
+	-IrobustPredicates.cpp \
+	-ICoordinateInputGUI.cpp \
+	-ICustomGraphicsView.cpp \
+	-ICustomGraphicsScene.cpp
+
+
+OBJS_Triangulation.cpp =  \
+	$(TARGETDIR_Triangulation.cpp)/main_V3.o \
+	$(TARGETDIR_Triangulation.cpp)/reader_writer.o \
+	$(TARGETDIR_Triangulation.cpp)/robustPredicates.o \
+	$(TARGETDIR_Triangulation.cpp)/reader_writer.o \
+	$(TARGETDIR_Triangulation.cpp)/CoordinateInputGUI.o \
+	$(TARGETDIR_Triangulation.cpp)/CustomGraphicsView.o \
+	$(TARGETDIR_Triangulation.cpp)/CustomGraphicsScene.o
+
+USERLIBS_Triangulation.cpp = $(SYSLIBS_Triangulation.cpp)
+DEPLIBS_Triangulation.cpp =  -IC:\Qt\Qt5.7.1\5.7\mingw53_32\include -IC:\Qt\Qt5.7.1\5.7\mingw53_32\include\QtGui -IC:\Qt\Qt5.7.1\5.7\mingw53_32\include\QtWidgets -IC:\Qt\Qt5.7.1\5.7\mingw53_32\include\QtCore
+LDLIBS_Triangulation.cpp = $(USERLIBS_Triangulation.cpp)
+
+
+# Compile source files into .o files
+$(TARGETDIR_Triangulation.cpp)/main_V3.o: $(TARGETDIR_Triangulation.cpp) main_V3.cpp
+	$(COMPILE.cc) $(CCFLAGS_Triangulation.cpp) $(CPPFLAGS_Triangulation.cpp) -o $@ main_V3.cpp
+
+$(TARGETDIR_Triangulation.cpp)/reader_writer.o: $(TARGETDIR_Triangulation.cpp) reader_writer.cpp
+	$(COMPILE.cc) $(CCFLAGS_Triangulation.cpp) $(CPPFLAGS_Triangulation.cpp) -o $@ reader_writer.cpp
+
+$(TARGETDIR_Triangulation.cpp)/robustPredicates.o: $(TARGETDIR_Triangulation.cpp) robustPredicates.cpp
+	$(COMPILE.cc) $(CCFLAGS_Triangulation.cpp) $(CPPFLAGS_Triangulation.cpp) -o $@ robustPredicates.cpp
+
+$(TARGETDIR_Triangulation.cpp)/reader_writer.o: $(TARGETDIR_Triangulation.cpp) reader_writer.c
+	$(COMPILE.c) $(CFLAGS_Triangulation.cpp) $(CPPFLAGS_Triangulation.cpp) -o $@ reader_writer.c
+
+$(TARGETDIR_Triangulation.cpp)/reader_writer.o: $(TARGETDIR_Triangulation.cpp) reader_writer.c
+	$(COMPILE.c) $(CFLAGS_Triangulation.cpp) $(CPPFLAGS_Triangulation.cpp) -o $@ reader_writer.c
+
+$(TARGETDIR_Triangulation.cpp)/CoordinateInputGUI.o: $(TARGETDIR_Triangulation.cpp) CoordinateInputGUI.c
+	$(COMPILE.c) $(CFLAGS_Triangulation.cpp) $(CPPFLAGS_Triangulation.cpp) -o $@ CoordinateInputGUI.c
+
+$(TARGETDIR_Triangulation.cpp)/CustomGraphicsView.o: $(TARGETDIR_Triangulation.cpp) CustomGraphicsView.c
+	$(COMPILE.c) $(CFLAGS_Triangulation.cpp) $(CPPFLAGS_Triangulation.cpp) -o $@ CustomGraphicsView.c
+
+$(TARGETDIR_Triangulation.cpp)/CustomGraphicsScene.o: $(TARGETDIR_Triangulation.cpp) CustomGraphicsScene.c
+	$(COMPILE.c) $(CFLAGS_Triangulation.cpp) $(CPPFLAGS_Triangulation.cpp) -o $@ CustomGraphicsScene.c
+
+
+#### Clean target deletes all generated files ####
+clean:
+	rm -f \
+		$(TARGETDIR_Triangulation.cpp)/main_V3.o \
+		$(TARGETDIR_Triangulation.cpp)/reader_writer.o \
+		$(TARGETDIR_Triangulation.cpp)/robustPredicates.o \
+		$(TARGETDIR_Triangulation.cpp)/CoordinateInputGUI.o \
+		$(TARGETDIR_Triangulation.cpp)/CustomGraphicsView.o \
+		$(TARGETDIR_Triangulation.cpp)/CustomGraphicsScene.o
+		$(TARGETDIR_Triangulation.cpp)/reader_writer.o
+
+	$(CCADMIN)
+	rm -f -r $(TARGETDIR_Triangulation.cpp)
+
+
+# Create the target directory (if needed)
+$(TARGETDIR_Triangulation.cpp):
+	mkdir -p $(TARGETDIR_Triangulation.cpp)
+
+
+# Enable dependency checking
+.KEEP_STATE:
+.KEEP_STATE_FILE:.make.state.GNU-amd64-Windows
+
